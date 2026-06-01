@@ -1,0 +1,45 @@
+name: Frontend CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'db-insight-frontend/**'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'db-insight-frontend/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: db-insight-frontend/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          cd db-insight-frontend
+          npm ci
+
+      - name: Lint
+        run: |
+          cd db-insight-frontend
+          npm run lint
+
+      - name: Type check
+        run: |
+          cd db-insight-frontend
+          npx tsc --noEmit
+
+      - name: Build
+        run: |
+          cd db-insight-frontend
+          npm run build

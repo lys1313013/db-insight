@@ -1,0 +1,43 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+*.swp
+*.swo
+
+# Java / Maven
+db-insight-backend/target/
+db-insight-backend/.mvn/
+db-insight-backend/mvnw
+db-insight-backend/mvnw.cmd
+*.class
+*.jar
+*.war
+*.ear
+logs/
+*.log
+
+# Node / Frontend
+db-insight-frontend/node_modules/
+db-insight-frontend/dist/
+db-insight-frontend/.env
+db-insight-frontend/.env.local
+db-insight-frontend/.env.production
+
+# Build outputs
+*.classpath
+*.project
+.settings/
+
+# Misc
+*.bak
+*.tmp
+
+# Dev / Test environment (local only)
+scripts/
