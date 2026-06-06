@@ -129,19 +129,20 @@ export const useConnectionStore = create<ConnectionState>((set, get) => ({
   restoreConnection: async () => {
     const stored = loadFromStorage();
     if (!stored) return;
-    set({ loading: true });
+    set({
+      connectionId: stored.connectionId,
+      dbType: stored.dbType as 'mysql' | 'postgresql',
+      database: stored.database,
+      isConnected: true,
+    });
     try {
       await schemaApi.getTables(stored.connectionId);
-      set({
-        connectionId: stored.connectionId,
-        isConnected: true,
-        dbType: stored.dbType as 'mysql' | 'postgresql',
-        database: stored.database,
-        loading: false,
-      });
-    } catch {
-      clearStorage();
       set({ loading: false });
+    } catch {
+      // Backend rejected the saved connection (e.g. JDBC died, DB down).
+      // Keep the saved id/dbType/database so the user can pick from the
+      // Sidebar and reconnect — don't nuke localStorage on a transient error.
+      set({ isConnected: false, loading: false });
     }
   },
 

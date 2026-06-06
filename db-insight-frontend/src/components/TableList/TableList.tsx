@@ -1,11 +1,11 @@
-import { Card, Row, Col, Tag, Empty, Spin, Typography } from 'antd';
+import { Card, Row, Col, Tag, Empty, Spin, Typography, Input } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import { useTableStore } from '../../stores/tableStore';
 
 const { Text } = Typography;
 
 export function TableList() {
-  const { tables, tableSearchQuery, loading } = useTableStore();
+  const { tables, tableSearchQuery, setTableSearchQuery, loading } = useTableStore();
   const navigate = useNavigate();
 
   const filteredTables = tables.filter((table) =>
@@ -24,7 +24,16 @@ export function TableList() {
     <div style={{ padding: 24, height: '100%', overflow: 'auto' }}>
       <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Text strong style={{ fontSize: 15 }}>表列表</Text>
-        <Tag>{filteredTables.length} 张表</Tag>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <Input
+            placeholder="搜索表名..."
+            value={tableSearchQuery}
+            onChange={(e) => setTableSearchQuery(e.target.value)}
+            allowClear
+            style={{ width: 240 }}
+          />
+          <Tag>{filteredTables.length} 张表</Tag>
+        </div>
       </div>
 
       <Row gutter={[16, 16]}>

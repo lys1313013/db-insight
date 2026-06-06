@@ -1,13 +1,20 @@
 package com.dbinsight.model;
 
 public class ColumnInfo {
+    private String tableName;
+    private String tableComment;
     private String columnName;
     private String dataType;
     private String columnKey;
     private String isNullable;
     private String columnDefault;
     private String columnComment;
+    private Integer ordinalPosition;
 
+    public String getTableName() { return tableName; }
+    public void setTableName(String tableName) { this.tableName = tableName; }
+    public String getTableComment() { return tableComment; }
+    public void setTableComment(String tableComment) { this.tableComment = tableComment; }
     public String getColumnName() { return columnName; }
     public void setColumnName(String columnName) { this.columnName = columnName; }
     public String getDataType() { return dataType; }
@@ -20,4 +27,6 @@ public class ColumnInfo {
     public void setColumnDefault(String columnDefault) { this.columnDefault = columnDefault; }
     public String getColumnComment() { return columnComment; }
     public void setColumnComment(String columnComment) { this.columnComment = columnComment; }
+    public Integer getOrdinalPosition() { return ordinalPosition; }
+    public void setOrdinalPosition(Integer ordinalPosition) { this.ordinalPosition = ordinalPosition; }
 }

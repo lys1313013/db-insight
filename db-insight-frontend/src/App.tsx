@@ -7,6 +7,7 @@ import { Sidebar } from './components/Sidebar/Sidebar';
 import { TableList } from './components/TableList/TableList';
 import { TableCanvas } from './components/TableCanvas/TableCanvas';
 import { TableDetail } from './components/TableDetail/TableDetail';
+import { AllColumns } from './components/AllColumns/AllColumns';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { useAuthStore } from './stores/authStore';
@@ -17,6 +18,10 @@ function App() {
   const { isConnected, restoreConnection } = useConnectionStore();
   const location = useLocation();
   const isAuthPage = location.pathname === '/login' || location.pathname === '/register';
+  const isListPage = location.pathname === '/list';
+  const isCanvasPage = location.pathname === '/canvas';
+  const isColumnsPage = location.pathname === '/columns';
+  const hideSidebar = (isListPage || isCanvasPage || isColumnsPage) && isConnected;
 
   useEffect(() => {
     if (token) {
@@ -60,11 +65,12 @@ function App() {
       <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: '#f5f5f5' }}>
         <Header onLogout={logout} />
         <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-          <Sidebar />
+          {!hideSidebar && <Sidebar />}
           <main style={{ flex: 1, overflow: 'hidden', background: '#f5f5f5' }}>
             {isConnected ? (
               <Routes>
                 <Route path="/list" element={<TableList />} />
+                <Route path="/columns" element={<AllColumns />} />
                 <Route path="/canvas" element={<TableCanvas />} />
                 <Route path="/table/:tableName" element={<TableDetail />} />
                 <Route path="*" element={<Navigate to="/list" replace />} />

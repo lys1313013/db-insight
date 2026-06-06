@@ -16,6 +16,12 @@ export interface ColumnInfo {
   columnComment: string;
 }
 
+export interface AllColumnInfo extends ColumnInfo {
+  tableName: string;
+  tableComment: string;
+  ordinalPosition: number;
+}
+
 export interface IndexInfo {
   indexName: string;
   columnName: string;

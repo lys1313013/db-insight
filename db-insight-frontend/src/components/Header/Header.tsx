@@ -21,6 +21,7 @@ export function Header({ onLogout }: HeaderProps) {
 
   const isList = location.pathname === '/list' || location.pathname === '/';
   const isCanvas = location.pathname === '/canvas';
+  const isColumns = location.pathname === '/columns';
 
   const handleDisconnect = async () => {
     await disconnect();
@@ -57,6 +58,12 @@ export function Header({ onLogout }: HeaderProps) {
               onClick={() => handleViewChange('/list')}
             >
               列表
+            </Button>
+            <Button
+              type={isColumns ? 'primary' : 'default'}
+              onClick={() => handleViewChange('/columns')}
+            >
+              表格模式
             </Button>
             <Button
               type={isCanvas ? 'primary' : 'default'}

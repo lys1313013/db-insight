@@ -8,7 +8,7 @@ import {
   MiniMap,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { Typography } from 'antd';
+import { Typography, Input } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import { useTableStore } from '../../stores/tableStore';
 
@@ -66,12 +66,18 @@ const nodeTypes = {
 };
 
 export function TableCanvas() {
-  const { tables } = useTableStore();
+  const { tables, tableSearchQuery, setTableSearchQuery } = useTableStore();
   const navigate = useNavigate();
 
+  const filteredTables = useMemo(() => {
+    return tables.filter((table) =>
+      table.tableName.toLowerCase().includes(tableSearchQuery.toLowerCase())
+    );
+  }, [tables, tableSearchQuery]);
+
   const initialNodes: Node[] = useMemo(() => {
-    const cols = Math.ceil(Math.sqrt(tables.length));
-    return tables.map((table, index) => {
+    const cols = Math.ceil(Math.sqrt(filteredTables.length));
+    return filteredTables.map((table, index) => {
       const row = Math.floor(index / cols);
       const col = index % cols;
       const columnCount = table.columnNames ? table.columnNames.split(', ').length : table.columnCount;
@@ -90,12 +96,21 @@ export function TableCanvas() {
         },
       };
     });
-  }, [tables, navigate]);
+  }, [filteredTables, navigate]);
 
   const [nodes, , onNodesChange] = useNodesState(initialNodes);
 
   return (
-    <div style={{ width: '100%', height: '100%' }}>
+    <div style={{ width: '100%', height: '100%', position: 'relative' }}>
+      <div style={{ position: 'absolute', top: 16, right: 16, zIndex: 10 }}>
+        <Input
+          placeholder="搜索表名..."
+          value={tableSearchQuery}
+          onChange={(e) => setTableSearchQuery(e.target.value)}
+          allowClear
+          style={{ width: 240 }}
+        />
+      </div>
       <ReactFlow
         nodes={nodes}
         onNodesChange={onNodesChange}

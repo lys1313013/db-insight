@@ -1,5 +1,6 @@
 package com.dbinsight.controller;
 
+import com.dbinsight.model.ColumnInfo;
 import com.dbinsight.model.TableInfo;
 import com.dbinsight.security.CurrentUser;
 import com.dbinsight.service.ConnectionService;
@@ -35,6 +36,16 @@ public class SchemaController {
         Map<String, Object> response = new HashMap<>();
         response.put("success", true);
         response.put("data", tables);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/columns")
+    public ResponseEntity<Map<String, Object>> getAllColumns(@PathVariable UUID connectionId) {
+        UUID userId = currentUser.id();
+        List<ColumnInfo> columns = schemaService.getAllColumns(userId, connectionId);
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", true);
+        response.put("data", columns);
         return ResponseEntity.ok(response);
     }
 

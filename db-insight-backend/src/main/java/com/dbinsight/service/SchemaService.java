@@ -82,6 +82,78 @@ public class SchemaService {
         return tables;
     }
 
+    public List<ColumnInfo> getAllColumns(UUID userId, UUID connectionId) {
+        Connection conn = connectionService.getConnection(userId, connectionId);
+        String dbType = connectionService.getDbType(userId, connectionId);
+        String database = connectionService.getDatabase(userId, connectionId);
+
+        String sql = switch (dbType) {
+            case "mysql" -> """
+                    SELECT c.TABLE_NAME,
+                           COALESCE(t.TABLE_COMMENT, '') AS TABLE_COMMENT,
+                           c.COLUMN_NAME, c.DATA_TYPE, c.COLUMN_KEY, c.IS_NULLABLE,
+                           c.COLUMN_DEFAULT, COALESCE(c.COLUMN_COMMENT, '') AS COLUMN_COMMENT,
+                           c.ORDINAL_POSITION
+                    FROM INFORMATION_SCHEMA.COLUMNS c
+                    LEFT JOIN INFORMATION_SCHEMA.TABLES t
+                      ON t.TABLE_SCHEMA = c.TABLE_SCHEMA AND t.TABLE_NAME = c.TABLE_NAME
+                    WHERE c.TABLE_SCHEMA = ?
+                    ORDER BY c.TABLE_NAME, c.ORDINAL_POSITION
+                    """;
+            case "postgresql" -> """
+                    SELECT c.table_name,
+                           COALESCE(obj_description(tbl.oid, 'pg_class'), '') AS table_comment,
+                           c.column_name, c.data_type,
+                           CASE WHEN pk.column_name IS NOT NULL THEN 'PRI' ELSE '' END AS column_key,
+                           c.is_nullable, c.column_default,
+                           COALESCE(col_description((quote_ident(c.table_schema) || '.' || quote_ident(c.table_name))::regclass,
+                                                     c.ordinal_position::int), '') AS column_comment,
+                           c.ordinal_position
+                    FROM information_schema.columns c
+                    JOIN pg_class tbl ON tbl.relname = c.table_name
+                    LEFT JOIN pg_namespace nsp ON nsp.oid = tbl.relnamespace AND nsp.nspname = c.table_schema
+                    LEFT JOIN (
+                      SELECT ku.table_schema, ku.table_name, ku.column_name
+                      FROM information_schema.table_constraints tc
+                      JOIN information_schema.key_column_usage ku
+                        ON tc.constraint_name = ku.constraint_name
+                       AND tc.table_schema = ku.table_schema
+                      WHERE tc.constraint_type = 'PRIMARY KEY'
+                    ) pk ON pk.table_schema = c.table_schema
+                        AND pk.table_name = c.table_name
+                        AND pk.column_name = c.column_name
+                    WHERE c.table_schema = 'public'
+                    ORDER BY c.table_name, c.ordinal_position
+                    """;
+            default -> throw new DatabaseException("不支持的数据库类型");
+        };
+
+        List<ColumnInfo> columns = new ArrayList<>();
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            if ("mysql".equals(dbType)) {
+                ps.setString(1, database);
+            }
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    ColumnInfo column = new ColumnInfo();
+                    column.setTableName(rs.getString("table_name"));
+                    column.setTableComment(rs.getString("table_comment"));
+                    column.setColumnName(rs.getString("column_name"));
+                    column.setDataType(rs.getString("data_type"));
+                    column.setColumnKey(rs.getString("column_key"));
+                    column.setIsNullable(rs.getString("is_nullable"));
+                    column.setColumnDefault(rs.getString("column_default"));
+                    column.setColumnComment(rs.getString("column_comment"));
+                    column.setOrdinalPosition(rs.getInt("ordinal_position"));
+                    columns.add(column);
+                }
+            }
+        } catch (SQLException e) {
+            throw new DatabaseException("查询全量列失败: " + e.getMessage());
+        }
+        return columns;
+    }
+
     public TableInfo getTableDetail(UUID userId, UUID connectionId, String tableName) {
         Connection conn = connectionService.getConnection(userId, connectionId);
         String dbType = connectionService.getDbType(userId, connectionId);
