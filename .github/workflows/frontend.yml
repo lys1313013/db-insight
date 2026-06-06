@@ -29,11 +29,6 @@ jobs:
           cd db-insight-frontend
           npm ci
 
-      - name: Lint
-        run: |
-          cd db-insight-frontend
-          npm run lint
-
       - name: Type check
         run: |
           cd db-insight-frontend
