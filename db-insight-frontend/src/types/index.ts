@@ -1,9 +1,19 @@
 export interface ConnectionConfig {
+  name: string;
   type: 'mysql' | 'postgresql';
   host: string;
   port: number;
   username: string;
   password: string;
+  database: string;
+}
+
+export interface ConnectionView {
+  id: string;
+  name: string;
+  dbType: 'mysql' | 'postgresql';
+  host: string;
+  port: number;
   database: string;
 }
 
