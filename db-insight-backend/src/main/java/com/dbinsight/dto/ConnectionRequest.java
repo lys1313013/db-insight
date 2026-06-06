@@ -2,6 +2,7 @@ package com.dbinsight.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 
 public class ConnectionRequest {
 
@@ -23,6 +24,10 @@ public class ConnectionRequest {
     @NotBlank(message = "数据库名不能为空")
     private String database;
 
+    @NotBlank(message = "连接名称不能为空")
+    @Size(max = 128, message = "连接名称不能超过 128 字符")
+    private String name;
+
     public String getType() { return type; }
     public void setType(String type) { this.type = type; }
     public String getHost() { return host; }
@@ -35,4 +40,6 @@ public class ConnectionRequest {
     public void setPassword(String password) { this.password = password; }
     public String getDatabase() { return database; }
     public void setDatabase(String database) { this.database = database; }
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
 }

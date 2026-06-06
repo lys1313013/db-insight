@@ -1,37 +1,15 @@
 import { create } from 'zustand';
-import { ConnectionConfig } from '../types';
+import { ConnectionConfig, ConnectionView } from '../types';
 import { connectionApi } from '../api/connectionApi';
 import { schemaApi } from '../api/schemaApi';
 
 const STORAGE_KEY = 'db-insight-connection';
-const SAVED_KEY = 'db-insight-saved-connections';
-
-export interface SavedConnection {
-  id: string;
-  name: string;
-  config: ConnectionConfig;
-  createdAt: number;
-}
+const LEGACY_SAVED_KEY = 'db-insight-saved-connections';
 
 interface StoredConnection {
   connectionId: string;
-  config: ConnectionConfig;
   dbType: string;
   database: string;
-}
-
-function loadSavedConnections(): SavedConnection[] {
-  try {
-    const raw = localStorage.getItem(SAVED_KEY);
-    if (!raw) return [];
-    return JSON.parse(raw) as SavedConnection[];
-  } catch {
-    return [];
-  }
-}
-
-function saveSavedConnections(list: SavedConnection[]) {
-  localStorage.setItem(SAVED_KEY, JSON.stringify(list));
 }
 
 function loadFromStorage(): StoredConnection | null {
@@ -52,21 +30,25 @@ function clearStorage() {
   localStorage.removeItem(STORAGE_KEY);
 }
 
+// One-time cleanup of the old localStorage key (from the pre-backend era)
+localStorage.removeItem(LEGACY_SAVED_KEY);
+
 interface ConnectionState {
   connectionId: string | null;
   isConnected: boolean;
   dbType: 'mysql' | 'postgresql' | null;
   database: string | null;
-  config: ConnectionConfig | null;
+  connections: ConnectionView[];
   loading: boolean;
+  loadingConnections: boolean;
   error: string | null;
-  savedConnections: SavedConnection[];
   connect: (config: ConnectionConfig) => Promise<void>;
+  connectToView: (view: ConnectionView) => Promise<void>;
   disconnect: () => Promise<void>;
   restoreConnection: () => Promise<void>;
+  loadConnections: () => Promise<void>;
+  deleteConnection: (id: string) => Promise<void>;
   clearError: () => void;
-  saveConnection: (name: string, config: ConnectionConfig) => void;
-  deleteSavedConnection: (id: string) => void;
 }
 
 export const useConnectionStore = create<ConnectionState>((set, get) => ({
@@ -74,33 +56,53 @@ export const useConnectionStore = create<ConnectionState>((set, get) => ({
   isConnected: false,
   dbType: null,
   database: null,
-  config: null,
+  connections: [],
   loading: false,
+  loadingConnections: false,
   error: null,
-  savedConnections: loadSavedConnections(),
 
-  connect: async (config: ConnectionConfig) => {
+  connect: async (config) => {
     set({ loading: true, error: null });
     try {
       await connectionApi.test(config);
       const { data } = await connectionApi.create(config);
-      const state = {
+      set({
         connectionId: data.connectionId,
         isConnected: true,
         dbType: config.type,
         database: config.database,
-        config,
-      };
-      set({ ...state, loading: false });
+        loading: false,
+      });
       saveToStorage({
         connectionId: data.connectionId,
-        config,
         dbType: config.type,
         database: config.database,
       });
+      get().loadConnections();
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : '连接失败';
-      set({ loading: false, error: message });
+      set({ loading: false, error: extractMessage(err, '连接失败') });
+      throw err;
+    }
+  },
+
+  connectToView: async (view) => {
+    set({ loading: true, error: null });
+    try {
+      await schemaApi.getTables(view.id);
+      set({
+        connectionId: view.id,
+        isConnected: true,
+        dbType: view.dbType,
+        database: view.database,
+        loading: false,
+      });
+      saveToStorage({
+        connectionId: view.id,
+        dbType: view.dbType,
+        database: view.database,
+      });
+    } catch (err: unknown) {
+      set({ loading: false, error: extractMessage(err, '无法连接到目标库,请确认数据库是否可达') });
       throw err;
     }
   },
@@ -109,9 +111,9 @@ export const useConnectionStore = create<ConnectionState>((set, get) => ({
     const { connectionId } = get();
     if (connectionId) {
       try {
-        await connectionApi.disconnect(connectionId);
+        await connectionApi.closeJdbc(connectionId);
       } catch {
-        // ignore disconnect error
+        // ignore
       }
     }
     clearStorage();
@@ -120,14 +122,13 @@ export const useConnectionStore = create<ConnectionState>((set, get) => ({
       isConnected: false,
       dbType: null,
       database: null,
-      config: null,
     });
+    get().loadConnections();
   },
 
   restoreConnection: async () => {
     const stored = loadFromStorage();
     if (!stored) return;
-
     set({ loading: true });
     try {
       await schemaApi.getTables(stored.connectionId);
@@ -136,7 +137,6 @@ export const useConnectionStore = create<ConnectionState>((set, get) => ({
         isConnected: true,
         dbType: stored.dbType as 'mysql' | 'postgresql',
         database: stored.database,
-        config: stored.config,
         loading: false,
       });
     } catch {
@@ -145,23 +145,38 @@ export const useConnectionStore = create<ConnectionState>((set, get) => ({
     }
   },
 
+  loadConnections: async () => {
+    set({ loadingConnections: true });
+    try {
+      const { data } = await connectionApi.list();
+      set({ connections: data, loadingConnections: false });
+    } catch {
+      set({ loadingConnections: false });
+    }
+  },
+
+  deleteConnection: async (id) => {
+    try {
+      await connectionApi.remove(id);
+      set({ connections: get().connections.filter((c) => c.id !== id) });
+      const { connectionId } = get();
+      if (connectionId === id) {
+        clearStorage();
+        set({ connectionId: null, isConnected: false, dbType: null, database: null });
+      }
+    } catch (err: unknown) {
+      set({ error: extractMessage(err, '删除连接失败') });
+      throw err;
+    }
+  },
+
   clearError: () => set({ error: null }),
-
-  saveConnection: (name, config) => {
-    const saved: SavedConnection = {
-      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-      name,
-      config,
-      createdAt: Date.now(),
-    };
-    const list = [...get().savedConnections, saved];
-    saveSavedConnections(list);
-    set({ savedConnections: list });
-  },
-
-  deleteSavedConnection: (id) => {
-    const list = get().savedConnections.filter((c) => c.id !== id);
-    saveSavedConnections(list);
-    set({ savedConnections: list });
-  },
 }));
+
+function extractMessage(err: unknown, fallback: string): string {
+  if (typeof err === 'object' && err !== null) {
+    const e = err as { response?: { data?: { message?: string } }; message?: string };
+    return e.response?.data?.message ?? e.message ?? fallback;
+  }
+  return fallback;
+}

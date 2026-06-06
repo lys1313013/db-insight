@@ -10,6 +10,5 @@ class DbInsightApplicationTests {
 
     @Test
     void contextLoads() {
-        // Verify Spring context loads successfully
     }
 }

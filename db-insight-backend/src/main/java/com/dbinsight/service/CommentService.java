@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.UUID;
 
 @Service
 public class CommentService {
@@ -16,10 +17,10 @@ public class CommentService {
         this.connectionService = connectionService;
     }
 
-    public void updateTableComment(String connectionId, String tableName, String comment) {
-        Connection conn = connectionService.getConnection(connectionId);
-        String dbType = connectionService.getDbType(connectionId);
-        String database = connectionService.getDatabase(connectionId);
+    public void updateTableComment(UUID userId, UUID connectionId, String tableName, String comment) {
+        Connection conn = connectionService.getConnection(userId, connectionId);
+        String dbType = connectionService.getDbType(userId, connectionId);
+        String database = connectionService.getDatabase(userId, connectionId);
 
         String escapedName = escapeTableName(tableName, dbType);
 

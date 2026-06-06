@@ -24,6 +24,7 @@ class ConnectionRequestTest {
     @Test
     void validMySqlConnection() {
         ConnectionRequest request = new ConnectionRequest();
+        request.setName("local-mysql");
         request.setType("mysql");
         request.setHost("localhost");
         request.setPort(3306);
@@ -38,6 +39,7 @@ class ConnectionRequestTest {
     @Test
     void validPostgreSqlConnection() {
         ConnectionRequest request = new ConnectionRequest();
+        request.setName("local-pg");
         request.setType("postgresql");
         request.setHost("localhost");
         request.setPort(5432);
@@ -52,6 +54,7 @@ class ConnectionRequestTest {
     @Test
     void invalidType() {
         ConnectionRequest request = new ConnectionRequest();
+        request.setName("x");
         request.setType("oracle");
         request.setHost("localhost");
         request.setPort(3306);
@@ -68,6 +71,7 @@ class ConnectionRequestTest {
     @Test
     void missingHost() {
         ConnectionRequest request = new ConnectionRequest();
+        request.setName("x");
         request.setType("mysql");
         request.setHost("");
         request.setPort(3306);
@@ -82,6 +86,7 @@ class ConnectionRequestTest {
     @Test
     void missingUsername() {
         ConnectionRequest request = new ConnectionRequest();
+        request.setName("x");
         request.setType("mysql");
         request.setHost("localhost");
         request.setPort(3306);
@@ -96,6 +101,7 @@ class ConnectionRequestTest {
     @Test
     void missingDatabase() {
         ConnectionRequest request = new ConnectionRequest();
+        request.setName("x");
         request.setType("mysql");
         request.setHost("localhost");
         request.setPort(3306);
@@ -105,5 +111,20 @@ class ConnectionRequestTest {
 
         Set<ConstraintViolation<ConnectionRequest>> violations = validator.validate(request);
         assertFalse(violations.isEmpty(), "Missing database should produce violation");
+    }
+
+    @Test
+    void missingName() {
+        ConnectionRequest request = new ConnectionRequest();
+        request.setName("");
+        request.setType("mysql");
+        request.setHost("localhost");
+        request.setPort(3306);
+        request.setUsername("root");
+        request.setPassword("password");
+        request.setDatabase("testdb");
+
+        Set<ConstraintViolation<ConnectionRequest>> violations = validator.validate(request);
+        assertFalse(violations.isEmpty(), "Missing name should produce violation");
     }
 }

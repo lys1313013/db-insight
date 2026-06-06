@@ -1,14 +1,20 @@
 import { useState } from 'react';
-import { Button, Tag, Space } from 'antd';
-import { ExportOutlined } from '@ant-design/icons';
+import { Button, Tag, Space, Dropdown, Avatar } from 'antd';
+import { ExportOutlined, LogoutOutlined, UserOutlined } from '@ant-design/icons';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useConnectionStore } from '../../stores/connectionStore';
 import { useTableStore } from '../../stores/tableStore';
+import { useAuthStore } from '../../stores/authStore';
 import { ExportModal } from '../ExportModal/ExportModal';
 
-export function Header() {
+interface HeaderProps {
+  onLogout: () => void;
+}
+
+export function Header({ onLogout }: HeaderProps) {
   const { isConnected, dbType, database, disconnect } = useConnectionStore();
   const { fetchTables } = useTableStore();
+  const user = useAuthStore((s) => s.user);
   const navigate = useNavigate();
   const location = useLocation();
   const [exportModalOpen, setExportModalOpen] = useState(false);
@@ -61,7 +67,7 @@ export function Header() {
           </Space>
         )}
 
-        <div>
+        <Space size={12}>
           {isConnected && (
             <Space size={8}>
               <Button icon={<ExportOutlined />} onClick={() => setExportModalOpen(true)}>
@@ -72,7 +78,27 @@ export function Header() {
               </Button>
             </Space>
           )}
-        </div>
+          {user && (
+            <Dropdown
+              menu={{
+                items: [
+                  {
+                    key: 'logout',
+                    icon: <LogoutOutlined />,
+                    label: '退出登录',
+                    onClick: onLogout,
+                  },
+                ],
+              }}
+              placement="bottomRight"
+            >
+              <Space style={{ cursor: 'pointer' }}>
+                <Avatar size="small" icon={<UserOutlined />} />
+                <span style={{ fontSize: 13 }}>{user.username}</span>
+              </Space>
+            </Dropdown>
+          )}
+        </Space>
       </header>
       <ExportModal open={exportModalOpen} onClose={() => setExportModalOpen(false)} />
     </>

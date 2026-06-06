@@ -12,6 +12,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 public class SchemaService {
@@ -22,10 +23,10 @@ public class SchemaService {
         this.connectionService = connectionService;
     }
 
-    public List<TableInfo> getTables(String connectionId) {
-        Connection conn = connectionService.getConnection(connectionId);
-        String dbType = connectionService.getDbType(connectionId);
-        String database = connectionService.getDatabase(connectionId);
+    public List<TableInfo> getTables(UUID userId, UUID connectionId) {
+        Connection conn = connectionService.getConnection(userId, connectionId);
+        String dbType = connectionService.getDbType(userId, connectionId);
+        String database = connectionService.getDatabase(userId, connectionId);
 
         String sql = switch (dbType) {
             case "mysql" -> """
@@ -81,10 +82,10 @@ public class SchemaService {
         return tables;
     }
 
-    public TableInfo getTableDetail(String connectionId, String tableName) {
-        Connection conn = connectionService.getConnection(connectionId);
-        String dbType = connectionService.getDbType(connectionId);
-        String database = connectionService.getDatabase(connectionId);
+    public TableInfo getTableDetail(UUID userId, UUID connectionId, String tableName) {
+        Connection conn = connectionService.getConnection(userId, connectionId);
+        String dbType = connectionService.getDbType(userId, connectionId);
+        String database = connectionService.getDatabase(userId, connectionId);
 
         TableInfo table = new TableInfo();
         table.setTableName(tableName);
@@ -95,15 +96,14 @@ public class SchemaService {
         return table;
     }
 
-    public String exportMarkdown(String connectionId) {
-        String database = connectionService.getDatabase(connectionId);
-        List<TableInfo> tables = getTables(connectionId);
+    public String exportMarkdown(UUID userId, UUID connectionId) {
+        String database = connectionService.getDatabase(userId, connectionId);
+        List<TableInfo> tables = getTables(userId, connectionId);
         tables.sort((a, b) -> a.getTableName().compareToIgnoreCase(b.getTableName()));
 
         StringBuilder md = new StringBuilder();
-        md.append("# 数据库文档：").append(database).append("\n\n");
+        md.append("# 数据库文档:").append(database).append("\n\n");
 
-        // 概览表
         md.append("## 概览\n\n");
         md.append("| 表名 | 说明 | 列数 |\n");
         md.append("|------|------|------|\n");
@@ -118,10 +118,9 @@ public class SchemaService {
         }
         md.append("\n---\n\n");
 
-        // 表结构详情
         md.append("## 表结构详情\n\n");
         for (int i = 0; i < tables.size(); i++) {
-            TableInfo tableDetail = getTableDetail(connectionId, tables.get(i).getTableName());
+            TableInfo tableDetail = getTableDetail(userId, connectionId, tables.get(i).getTableName());
 
             md.append("### ")
               .append(tableDetail.getTableName())
@@ -129,7 +128,6 @@ public class SchemaService {
               .append(tableDetail.getTableComment() != null ? tableDetail.getTableComment() : "-")
               .append("\n\n");
 
-            // 列信息表
             md.append("| 列名 | 说明 | 类型 | 键 | 允许为空 | 默认值 |\n");
             md.append("|------|------|------|-----|----------|--------|\n");
             for (ColumnInfo col : tableDetail.getColumns()) {
