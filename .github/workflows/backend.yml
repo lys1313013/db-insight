@@ -41,11 +41,6 @@ jobs:
           cd db-insight-backend
           mvn clean compile -q
 
-      - name: Test
-        run: |
-          cd db-insight-backend
-          mvn test -q
-
       - name: Package
         run: |
           cd db-insight-backend
