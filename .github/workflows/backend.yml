@@ -37,17 +37,17 @@ jobs:
       - name: Build
         run: |
           cd db-insight-backend
-          ./mvnw clean compile -q
+          mvn clean compile -q
 
       - name: Test
         run: |
           cd db-insight-backend
-          ./mvnw test -q
+          mvn test -q
 
       - name: Package
         run: |
           cd db-insight-backend
-          ./mvnw package -DskipTests -q
+          mvn package -DskipTests -q
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
