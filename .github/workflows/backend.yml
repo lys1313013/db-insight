@@ -5,10 +5,12 @@ on:
     branches: [main]
     paths:
       - 'db-insight-backend/**'
+      - '.github/workflows/backend.yml'
   pull_request:
     branches: [main]
     paths:
       - 'db-insight-backend/**'
+      - '.github/workflows/backend.yml'
 
 permissions:
   contents: read
