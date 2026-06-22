@@ -41,3 +41,4 @@ db-insight-frontend/.env.production
 
 # Dev / Test environment (local only)
 scripts/
+.env
