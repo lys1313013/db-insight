@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Button, Tag, Space, Dropdown, Avatar } from 'antd';
-import { ExportOutlined, LogoutOutlined, UserOutlined } from '@ant-design/icons';
+import { ExportOutlined, LogoutOutlined, UserOutlined, DatabaseOutlined } from '@ant-design/icons';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useConnectionStore } from '../../stores/connectionStore';
 import { useTableStore } from '../../stores/tableStore';
@@ -53,6 +53,12 @@ export function Header({ onLogout }: HeaderProps) {
 
         {isConnected && (
           <Space size={8}>
+            <Button
+              icon={<DatabaseOutlined />}
+              onClick={() => navigate('/connections')}
+            >
+              管理连接
+            </Button>
             <Button
               type={isList ? 'primary' : 'default'}
               onClick={() => handleViewChange('/list')}

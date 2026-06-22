@@ -12,7 +12,15 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 
 @Service
 public class SchemaService {
@@ -80,6 +88,70 @@ public class SchemaService {
             throw new DatabaseException("查询表列表失败: " + e.getMessage());
         }
         return tables;
+    }
+
+    private static final int MAX_CONCURRENT_COUNTS = 5;
+
+    public Map<String, Long> getRowCounts(UUID userId, UUID connectionId, List<String> tableNames) {
+        String dbType = connectionService.getDbType(userId, connectionId);
+        String database = connectionService.getDatabase(userId, connectionId);
+        Map<String, Long> results = new ConcurrentHashMap<>();
+        Semaphore semaphore = new Semaphore(MAX_CONCURRENT_COUNTS);
+        ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
+        List<Future<?>> futures = new ArrayList<>();
+
+        for (String tableName : tableNames) {
+            futures.add(executor.submit(() -> {
+                try {
+                    semaphore.acquire();
+                    try {
+                        long count = countTableRows(userId, connectionId, dbType, database, tableName);
+                        results.put(tableName, count);
+                    } finally {
+                        semaphore.release();
+                    }
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }));
+        }
+
+        for (Future<?> future : futures) {
+            try {
+                future.get();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            } catch (ExecutionException ignored) {
+            }
+        }
+
+        executor.shutdown();
+        try {
+            executor.awaitTermination(60, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+
+        return results;
+    }
+
+    private long countTableRows(UUID userId, UUID connectionId, String dbType, String database, String tableName) {
+        Connection conn = connectionService.openNewConnection(userId, connectionId);
+        String sql = switch (dbType) {
+            case "mysql" -> "SELECT COUNT(*) FROM `" + tableName.replace("`", "``") + "`";
+            case "postgresql" -> "SELECT COUNT(*) FROM \"" + tableName.replace("\"", "\"\"") + "\"";
+            default -> throw new DatabaseException("不支持的数据库类型");
+        };
+
+        try (conn; PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            if (rs.next()) {
+                return rs.getLong(1);
+            }
+        } catch (SQLException e) {
+            throw new DatabaseException("查询表 " + tableName + " 行数失败: " + e.getMessage());
+        }
+        return 0;
     }
 
     public List<ColumnInfo> getAllColumns(UUID userId, UUID connectionId) {
@@ -166,6 +238,16 @@ public class SchemaService {
         table.setTableComment(getTableComment(conn, dbType, database, tableName));
         table.setColumnCount(table.getColumns().size());
         return table;
+    }
+
+    public ColumnInfo getColumnDetail(UUID userId, UUID connectionId, String tableName, String columnName) {
+        Connection conn = connectionService.getConnection(userId, connectionId);
+        String dbType = connectionService.getDbType(userId, connectionId);
+        String database = connectionService.getDatabase(userId, connectionId);
+        return getColumns(conn, dbType, database, tableName).stream()
+                .filter(c -> c.getColumnName().equals(columnName))
+                .findFirst()
+                .orElse(null);
     }
 
     public String exportMarkdown(UUID userId, UUID connectionId) {
@@ -259,7 +341,7 @@ public class SchemaService {
 
     private List<ColumnInfo> getColumns(Connection conn, String dbType, String database, String tableName) {
         String sql = switch (dbType) {
-            case "mysql" -> "SELECT COLUMN_NAME, DATA_TYPE, COLUMN_KEY, IS_NULLABLE, COLUMN_DEFAULT, COLUMN_COMMENT FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?";
+            case "mysql" -> "SELECT COLUMN_NAME, DATA_TYPE, COLUMN_TYPE, COLUMN_KEY, IS_NULLABLE, COLUMN_DEFAULT, COLUMN_COMMENT FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?";
             case "postgresql" -> """
                     SELECT c.column_name, c.data_type,
                            CASE WHEN pk.column_name IS NOT NULL THEN 'PRI' ELSE '' END AS column_key,
@@ -293,6 +375,9 @@ public class SchemaService {
                     ColumnInfo column = new ColumnInfo();
                     column.setColumnName(rs.getString("column_name"));
                     column.setDataType(rs.getString("data_type"));
+                    if ("mysql".equals(dbType)) {
+                        column.setColumnType(rs.getString("column_type"));
+                    }
                     column.setColumnKey(rs.getString("column_key"));
                     column.setIsNullable(rs.getString("is_nullable"));
                     column.setColumnDefault(rs.getString("column_default"));

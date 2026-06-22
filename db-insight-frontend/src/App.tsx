@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { ConfigProvider, Empty } from 'antd';
+import { ConfigProvider } from 'antd';
 import zhCN from 'antd/locale/zh_CN';
 import { Header } from './components/Header/Header';
 import { Sidebar } from './components/Sidebar/Sidebar';
@@ -10,6 +10,7 @@ import { TableDetail } from './components/TableDetail/TableDetail';
 import { AllColumns } from './components/AllColumns/AllColumns';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
+import { ConnectionsPage } from './pages/ConnectionsPage';
 import { useAuthStore } from './stores/authStore';
 import { useConnectionStore } from './stores/connectionStore';
 
@@ -21,7 +22,8 @@ function App() {
   const isListPage = location.pathname === '/list';
   const isCanvasPage = location.pathname === '/canvas';
   const isColumnsPage = location.pathname === '/columns';
-  const hideSidebar = (isListPage || isCanvasPage || isColumnsPage) && isConnected;
+  const isConnectionsPage = location.pathname === '/connections';
+  const hideSidebar = isConnected && (isListPage || isCanvasPage || isColumnsPage || isConnectionsPage);
 
   useEffect(() => {
     if (token) {
@@ -65,20 +67,22 @@ function App() {
       <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: '#f5f5f5' }}>
         <Header onLogout={logout} />
         <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-          {!hideSidebar && <Sidebar />}
+          {isConnected && !hideSidebar && <Sidebar />}
           <main style={{ flex: 1, overflow: 'hidden', background: '#f5f5f5' }}>
             {isConnected ? (
               <Routes>
                 <Route path="/list" element={<TableList />} />
                 <Route path="/columns" element={<AllColumns />} />
                 <Route path="/canvas" element={<TableCanvas />} />
+                <Route path="/connections" element={<ConnectionsPage />} />
                 <Route path="/table/:tableName" element={<TableDetail />} />
                 <Route path="*" element={<Navigate to="/list" replace />} />
               </Routes>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
-                <Empty description="请在左侧连接数据库" />
-              </div>
+              <Routes>
+                <Route path="/connections" element={<ConnectionsPage />} />
+                <Route path="*" element={<Navigate to="/connections" replace />} />
+              </Routes>
             )}
           </main>
         </div>

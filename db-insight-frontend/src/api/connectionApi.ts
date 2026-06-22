@@ -18,4 +18,7 @@ export const connectionApi = {
   // Actually delete the row from DB
   remove: (connectionId: string) =>
     client.delete(`/connections/${connectionId}`),
+
+  update: (connectionId: string, config: ConnectionConfig) =>
+    client.put(`/connections/${connectionId}`, config),
 };

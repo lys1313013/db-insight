@@ -4,6 +4,13 @@ import { useTableStore } from '../../stores/tableStore';
 
 const { Text } = Typography;
 
+function formatRowCount(count: number): string {
+  if (count >= 1_000_000_000) return (count / 1_000_000_000).toFixed(1) + 'B';
+  if (count >= 1_000_000) return (count / 1_000_000).toFixed(1) + 'M';
+  if (count >= 1_000) return (count / 1_000).toFixed(1) + 'K';
+  return count.toLocaleString();
+}
+
 export function TableList() {
   const { tables, tableSearchQuery, setTableSearchQuery, loading } = useTableStore();
   const navigate = useNavigate();
@@ -49,7 +56,14 @@ export function TableList() {
                 {table.tableComment && (
                   <Text type="secondary" style={{ fontSize: 12 }}>{table.tableComment}</Text>
                 )}
-                <div style={{ marginTop: 4 }}><Text type="secondary" style={{ fontSize: 11 }}>{table.columnCount} 列</Text></div>
+                <div style={{ marginTop: 4, display: 'flex', gap: 12, alignItems: 'center' }}>
+                  <Text type="secondary" style={{ fontSize: 11 }}>{table.columnCount} 列</Text>
+                  {table.rowCountLoading ? (
+                    <Spin size="small" />
+                  ) : table.rowCount !== undefined ? (
+                    <Text type="secondary" style={{ fontSize: 11 }}>{formatRowCount(table.rowCount)} 行</Text>
+                  ) : null}
+                </div>
               </div>
             </Card>
           </Col>

@@ -48,6 +48,7 @@ interface ConnectionState {
   restoreConnection: () => Promise<void>;
   loadConnections: () => Promise<void>;
   deleteConnection: (id: string) => Promise<void>;
+  updateConnection: (id: string, config: ConnectionConfig) => Promise<void>;
   clearError: () => void;
 }
 
@@ -168,6 +169,22 @@ export const useConnectionStore = create<ConnectionState>((set, get) => ({
     } catch (err: unknown) {
       set({ error: extractMessage(err, '删除连接失败') });
       throw err;
+    }
+  },
+
+  updateConnection: async (id, config) => {
+    await connectionApi.update(id, config);
+    set({
+      connections: get().connections.map((c) =>
+        c.id === id
+          ? { ...c, name: config.name, dbType: config.type, host: config.host, port: config.port, database: config.database, username: config.username }
+          : c
+      ),
+    });
+    const { connectionId } = get();
+    if (connectionId === id) {
+      saveToStorage({ connectionId: id, dbType: config.type, database: config.database });
+      set({ dbType: config.type, database: config.database });
     }
   },
 

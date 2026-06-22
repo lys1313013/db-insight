@@ -1,0 +1,20 @@
+services:
+  db:
+    image: postgres:15
+    container_name: db-insight-postgres-app
+    environment:
+      POSTGRES_USER: dbinsight
+      POSTGRES_PASSWORD: dbinsight123
+      POSTGRES_DB: db_insight
+    ports:
+      - "15434:5432"
+    volumes:
+      - db-insight-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dbinsight -d db_insight"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  db-insight-data:

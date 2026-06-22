@@ -89,4 +89,15 @@ public class DbConnection {
     public String getDatabase() { return database; }
     public OffsetDateTime getCreatedAt() { return createdAt; }
     public OffsetDateTime getUpdatedAt() { return updatedAt; }
+
+    public void update(String name, String dbType, String host, int port,
+                       String dbUsername, String dbPassword, String database) {
+        this.name = name;
+        this.dbType = dbType;
+        this.host = host;
+        this.port = port;
+        this.dbUsername = dbUsername;
+        this.dbPassword = dbPassword;
+        this.database = database;
+    }
 }

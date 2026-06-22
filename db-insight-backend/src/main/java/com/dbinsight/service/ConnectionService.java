@@ -61,6 +61,9 @@ public class ConnectionService {
 
     @Transactional
     public UUID createConnection(UUID userId, ConnectionRequest request) {
+        if (request.getPassword() == null || request.getPassword().isBlank()) {
+            throw new DatabaseException("密码不能为空");
+        }
         try {
             Connection conn = openJdbc(request.getType(), request.getHost(), request.getPort(),
                     request.getUsername(), request.getPassword(), request.getDatabase());
@@ -94,6 +97,35 @@ public class ConnectionService {
             }
         }
         repository.deleteById(connectionId);
+    }
+
+    @Transactional
+    public void updateConnection(UUID userId, UUID connectionId, ConnectionRequest request) {
+        assertOwner(userId, connectionId);
+        DbConnection entity = repository.findByIdAndUserId(connectionId, userId)
+                .orElseThrow(() -> new DatabaseException("连接不存在"));
+        String password = request.getPassword() != null && !request.getPassword().isBlank()
+                ? request.getPassword()
+                : entity.getDbPassword();
+        entity.update(request.getName(), request.getType(), request.getHost(), request.getPort(),
+                request.getUsername(), password, request.getDatabase());
+        repository.save(entity);
+
+        ConnectionInfo info = liveConnections.remove(connectionId);
+        if (info != null) {
+            try {
+                info.connection.close();
+            } catch (SQLException ignored) {
+            }
+            try {
+                Connection conn = openJdbc(request.getType(), request.getHost(), request.getPort(),
+                        request.getUsername(), password, request.getDatabase());
+                liveConnections.put(connectionId,
+                        new ConnectionInfo(conn, request.getType(), request.getDatabase(), userId));
+            } catch (SQLException e) {
+                log.warn("更新连接后重连失败: {} - {}", connectionId, e.getMessage());
+            }
+        }
     }
 
     public void closeJdbc(UUID userId, UUID connectionId) {
@@ -143,6 +175,18 @@ public class ConnectionService {
         return repository.findByIdAndUserId(connectionId, userId)
                 .orElseThrow(() -> new DatabaseException("连接不存在"))
                 .getDbType();
+    }
+
+    public Connection openNewConnection(UUID userId, UUID connectionId) {
+        assertOwner(userId, connectionId);
+        DbConnection entity = repository.findByIdAndUserId(connectionId, userId)
+                .orElseThrow(() -> new DatabaseException("连接不存在"));
+        try {
+            return openJdbc(entity.getDbType(), entity.getHost(), entity.getPort(),
+                    entity.getDbUsername(), entity.getDbPassword(), entity.getDatabase());
+        } catch (SQLException e) {
+            throw new DatabaseException("创建连接失败: " + e.getMessage());
+        }
     }
 
     public String getDatabase(UUID userId, UUID connectionId) {

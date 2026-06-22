@@ -61,6 +61,18 @@ public class SchemaController {
         return ResponseEntity.ok(response);
     }
 
+    @PostMapping("/tables/rowcounts")
+    public ResponseEntity<Map<String, Object>> getRowCounts(
+            @PathVariable UUID connectionId,
+            @RequestBody List<String> tableNames) {
+        UUID userId = currentUser.id();
+        Map<String, Long> rowCounts = schemaService.getRowCounts(userId, connectionId, tableNames);
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", true);
+        response.put("data", rowCounts);
+        return ResponseEntity.ok(response);
+    }
+
     @GetMapping("/export/markdown")
     public ResponseEntity<Map<String, Object>> exportMarkdown(@PathVariable UUID connectionId) {
         UUID userId = currentUser.id();

@@ -5,6 +5,7 @@ public class ColumnInfo {
     private String tableComment;
     private String columnName;
     private String dataType;
+    private String columnType;
     private String columnKey;
     private String isNullable;
     private String columnDefault;
@@ -19,6 +20,8 @@ public class ColumnInfo {
     public void setColumnName(String columnName) { this.columnName = columnName; }
     public String getDataType() { return dataType; }
     public void setDataType(String dataType) { this.dataType = dataType; }
+    public String getColumnType() { return columnType; }
+    public void setColumnType(String columnType) { this.columnType = columnType; }
     public String getColumnKey() { return columnKey; }
     public void setColumnKey(String columnKey) { this.columnKey = columnKey; }
     public String getIsNullable() { return isNullable; }

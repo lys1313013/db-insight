@@ -1,11 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button, Input, Table, Tag, Descriptions, Space, Typography, message, Card, Spin } from 'antd';
+import type { InputRef } from 'antd';
 import { ArrowLeftOutlined, EditOutlined, SaveOutlined, CloseOutlined } from '@ant-design/icons';
 import { useConnectionStore } from '../../stores/connectionStore';
 import { schemaApi } from '../../api/schemaApi';
 import { commentApi } from '../../api/commentApi';
-import { TableInfo } from '../../types';
+import { ColumnInfo, TableInfo } from '../../types';
 
 const { Text, Title } = Typography;
 
@@ -52,6 +53,22 @@ export function TableDetail() {
       messageApi.error('保存失败');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleColumnCommentSave = async (columnName: string, newComment: string) => {
+    if (!connectionId || !tableName || !tableData) return;
+    try {
+      await commentApi.updateColumnComment(connectionId, tableName, columnName, newComment);
+      setTableData({
+        ...tableData,
+        columns: tableData.columns?.map((c) =>
+          c.columnName === columnName ? { ...c, columnComment: newComment } : c
+        ),
+      });
+      messageApi.success('列注释已更新');
+    } catch {
+      messageApi.error('更新列注释失败');
     }
   };
 
@@ -104,6 +121,17 @@ export function TableDetail() {
           dataSource={columnData}
           columns={[
             { title: '列名', dataIndex: 'columnName', key: 'columnName', render: (v: string) => <Text strong>{v}</Text> },
+            {
+              title: '注释',
+              dataIndex: 'columnComment',
+              key: 'columnComment',
+              render: (v: string, record: ColumnInfo) => (
+                <EditableCommentCell
+                  value={v}
+                  onSave={(newValue) => handleColumnCommentSave(record.columnName, newValue)}
+                />
+              ),
+            },
             { title: '类型', dataIndex: 'dataType', key: 'dataType', render: (v: string) => <Tag>{v}</Tag> },
             {
               title: '键', dataIndex: 'columnKey', key: 'columnKey',
@@ -119,7 +147,6 @@ export function TableDetail() {
               render: (v: string) => v === 'YES' ? <Tag color="success">YES</Tag> : <Tag color="error">NO</Tag>
             },
             { title: '默认值', dataIndex: 'columnDefault', key: 'columnDefault', render: (v: string) => v || <Text type="secondary">-</Text> },
-            { title: '注释', dataIndex: 'columnComment', key: 'columnComment', render: (v: string) => v || <Text type="secondary">-</Text> },
           ]}
           pagination={false}
           size="small"
@@ -145,5 +172,60 @@ export function TableDetail() {
         </Card>
       )}
     </div>
+  );
+}
+
+function EditableCommentCell({ value, onSave }: { value: string; onSave: (newValue: string) => void | Promise<void> }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value);
+  const [saving, setSaving] = useState(false);
+  const inputRef = useRef<InputRef>(null);
+
+  useEffect(() => {
+    if (editing) {
+      setDraft(value);
+      setTimeout(() => inputRef.current?.focus(), 0);
+    }
+  }, [editing, value]);
+
+  const handleSave = async () => {
+    if (draft === value) {
+      setEditing(false);
+      return;
+    }
+    setSaving(true);
+    try {
+      await onSave(draft);
+      setEditing(false);
+    } catch {
+      // keep editing on error so the user can retry / cancel
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (editing) {
+    return (
+      <Input
+        ref={inputRef}
+        size="small"
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onPressEnter={handleSave}
+        onBlur={handleSave}
+        disabled={saving}
+        style={{ minWidth: 160 }}
+      />
+    );
+  }
+
+  return (
+    <span
+      onClick={() => setEditing(true)}
+      style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6, minHeight: 22 }}
+    >
+      {value ? <Text>{value}</Text> : <Text type="secondary" style={{ fontStyle: 'italic' }}>点击添加注释</Text>}
+      <EditOutlined style={{ fontSize: 11, color: '#bfbfbf' }} />
+    </span>
   );
 }

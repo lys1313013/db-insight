@@ -64,4 +64,14 @@ public class ConnectionController {
         response.put("success", true);
         return ResponseEntity.ok(response);
     }
+
+    @PutMapping("/{connectionId}")
+    public ResponseEntity<Map<String, Object>> updateConnection(
+            @PathVariable UUID connectionId,
+            @Valid @RequestBody ConnectionRequest request) {
+        connectionService.updateConnection(currentUser.id(), connectionId, request);
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", true);
+        return ResponseEntity.ok(response);
+    }
 }

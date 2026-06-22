@@ -11,7 +11,7 @@ import java.util.Map;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/connections/{connectionId}/tables/{tableName}/comment")
+@RequestMapping("/api/connections/{connectionId}/tables/{tableName}")
 public class CommentController {
 
     private final CommentService commentService;
@@ -22,12 +22,24 @@ public class CommentController {
         this.currentUser = currentUser;
     }
 
-    @PatchMapping
+    @PatchMapping("/comment")
     public ResponseEntity<Map<String, Object>> updateTableComment(
             @PathVariable UUID connectionId,
             @PathVariable String tableName,
             @RequestBody UpdateCommentRequest request) {
         commentService.updateTableComment(currentUser.id(), connectionId, tableName, request.getComment());
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", true);
+        return ResponseEntity.ok(response);
+    }
+
+    @PatchMapping("/columns/{columnName}/comment")
+    public ResponseEntity<Map<String, Object>> updateColumnComment(
+            @PathVariable UUID connectionId,
+            @PathVariable String tableName,
+            @PathVariable String columnName,
+            @RequestBody UpdateCommentRequest request) {
+        commentService.updateColumnComment(currentUser.id(), connectionId, tableName, columnName, request.getComment());
         Map<String, Object> response = new HashMap<>();
         response.put("success", true);
         return ResponseEntity.ok(response);

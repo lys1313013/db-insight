@@ -14,12 +14,14 @@ export interface ConnectionView {
   dbType: 'mysql' | 'postgresql';
   host: string;
   port: number;
+  username: string;
   database: string;
 }
 
 export interface ColumnInfo {
   columnName: string;
   dataType: string;
+  columnType?: string;
   columnKey: string;
   isNullable: string;
   columnDefault: string | null;
@@ -42,6 +44,8 @@ export interface TableInfo {
   tableName: string;
   tableComment: string;
   columnCount: number;
+  rowCount?: number;
+  rowCountLoading?: boolean;
   columnNames?: string;
   columns?: ColumnInfo[];
   indexes?: IndexInfo[];

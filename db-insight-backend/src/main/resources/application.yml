@@ -5,7 +5,7 @@ spring:
   application:
     name: db-insight
   datasource:
-    url: ${DB_INSIGHT_DB_URL:jdbc:postgresql://localhost:5434/db_insight}
+    url: ${DB_INSIGHT_DB_URL:jdbc:postgresql://localhost:15434/db_insight}
     username: ${DB_INSIGHT_DB_USER:dbinsight}
     password: ${DB_INSIGHT_DB_PASSWORD:dbinsight123}
   jpa:
