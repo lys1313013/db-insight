@@ -60,10 +60,17 @@ jobs:
           username: ${{ secrets.ALIYUN_ACR_USERNAME }}
           password: ${{ secrets.ALIYUN_ACR_PASSWORD }}
 
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
           context: db-insight-backend
+          platforms: linux/amd64,linux/arm64
           push: true
           tags: |
             ghcr.io/${{ github.repository }}-backend:latest
