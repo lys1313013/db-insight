@@ -9,7 +9,7 @@ services:
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
       SPRING_JPA_DATABASE_PLATFORM: org.hibernate.dialect.PostgreSQLDialect
     ports:
-      - "12381:8080"
+      - "12381:9090"
     networks:
       - db-insight-network
     restart: unless-stopped
