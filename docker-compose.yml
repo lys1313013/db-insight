@@ -8,7 +8,6 @@ services:
       SPRING_DATASOURCE_PASSWORD: dbinsight123
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
       SPRING_JPA_DATABASE_PLATFORM: org.hibernate.dialect.PostgreSQLDialect
-      CORS_ALLOWED_ORIGINS: http://localhost:12380,http://localhost
     ports:
       - "12381:9090"
     networks:

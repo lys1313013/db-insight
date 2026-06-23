@@ -28,12 +28,9 @@ import java.util.Map;
 public class SecurityConfig {
 
     private final String jwtSecret;
-    private final List<String> allowedOrigins;
 
-    public SecurityConfig(@Value("${app.jwt.secret}") String jwtSecret,
-                          @Value("${app.cors.allowed-origins}") List<String> allowedOrigins) {
+    public SecurityConfig(@Value("${app.jwt.secret}") String jwtSecret) {
         this.jwtSecret = jwtSecret;
-        this.allowedOrigins = allowedOrigins;
     }
 
     @Bean
@@ -70,7 +67,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration cfg = new CorsConfiguration();
-        cfg.setAllowedOrigins(allowedOrigins);
+        cfg.setAllowedOriginPatterns(List.of("*"));
         cfg.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         cfg.setAllowedHeaders(List.of("*"));
         cfg.setExposedHeaders(List.of("Authorization"));
