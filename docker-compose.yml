@@ -1,23 +1,4 @@
 services:
-  db:
-    image: postgres:15
-    container_name: db-insight-postgres-app
-    environment:
-      POSTGRES_USER: dbinsight
-      POSTGRES_PASSWORD: dbinsight123
-      POSTGRES_DB: db_insight
-    ports:
-      - "15434:5432"
-    volumes:
-      - db-insight-data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U dbinsight -d db_insight"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-    networks:
-      - db-insight-network
-
   backend:
     image: ${ALIYUN_ACR_REGISTRY}/lys1313013/db-insight-backend:${BACKEND_TAG:-latest}
     container_name: db-insight-backend
@@ -28,10 +9,7 @@ services:
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
       SPRING_JPA_DATABASE_PLATFORM: org.hibernate.dialect.PostgreSQLDialect
     ports:
-      - "8080:8080"
-    depends_on:
-      db:
-        condition: service_healthy
+      - "12381:8080"
     networks:
       - db-insight-network
     restart: unless-stopped
@@ -42,7 +20,7 @@ services:
     environment:
       VITE_API_BASE_URL: http://localhost:8080
     ports:
-      - "80:80"
+      - "12380:80"
     depends_on:
       - backend
     networks:
