@@ -71,6 +71,9 @@ jobs:
           context: db-insight-frontend
           platforms: linux/amd64,linux/arm64
           push: true
+          # 阿里云个人版 ACR 不支持 attestation manifest（oci.empty），必须关闭
+          provenance: false
+          sbom: false
           tags: |
             ghcr.io/${{ github.repository }}-frontend:latest
             ${{ secrets.ALIYUN_ACR_REGISTRY }}/${{ secrets.ALIYUN_ACR_NAMESPACE }}/db-insight-frontend:latest
