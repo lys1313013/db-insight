@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { TOKEN_KEY, USER_KEY } from '../constants';
 
 const client = axios.create({
   baseURL: '/api',
@@ -6,7 +7,7 @@ const client = axios.create({
 });
 
 client.interceptors.request.use((config) => {
-  const token = localStorage.getItem('db-insight-token');
+  const token = localStorage.getItem(TOKEN_KEY);
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -18,8 +19,8 @@ client.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       const currentPath = window.location.hash.replace(/^#/, '') || '/';
-      localStorage.removeItem('db-insight-token');
-      localStorage.removeItem('db-insight-user');
+      localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem(USER_KEY);
       if (!currentPath.startsWith('/login') && !currentPath.startsWith('/register')) {
         window.location.hash = '/login';
       }

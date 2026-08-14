@@ -7,22 +7,26 @@ services:
       SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
       SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
-      SPRING_JPA_DATABASE_PLATFORM: org.hibernate.dialect.PostgreSQLDialect
     ports:
       - "12381:9090"
     networks:
       - db-insight-network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/localhost/9090'"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 30s
 
   frontend:
     image: ${ALIYUN_ACR_REGISTRY}/${ALIYUN_ACR_NAMESPACE}/db-insight-frontend:${FRONTEND_TAG:-latest}
     container_name: db-insight-frontend
-    environment:
-      VITE_API_BASE_URL: http://localhost:12380
     ports:
       - "12380:80"
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     networks:
       - db-insight-network
     restart: unless-stopped

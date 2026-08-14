@@ -1,8 +1,6 @@
 import { create } from 'zustand';
 import { authApi } from '../api/authApi';
-
-const TOKEN_KEY = 'db-insight-token';
-const USER_KEY = 'db-insight-user';
+import { TOKEN_KEY, USER_KEY } from '../constants';
 
 export interface AuthUser {
   id: string;
